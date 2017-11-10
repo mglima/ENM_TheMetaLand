@@ -5,7 +5,7 @@ Overall, there is a main script (ENM_TheMetaLand) and a group of auxiliary funct
 Please follow the "installation" instructions
 
 ## Installation  
-1.Copy the folder "Scripts_for_ENM_TheMetaLand" to "C:" in your computer
+1.Copy the folder "Scripts_for_ENM_TheMetaLand" to "C:" in your computer  
 2.DONE!
 
 ## What I can do with ENM_The_MetaLand?  
