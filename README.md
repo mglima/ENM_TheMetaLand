@@ -34,10 +34,10 @@ The function has several input arguments, specify all of them as your desires.
     ####PCA: Do you wish to perform a PC on your predictors?(S/N) !Predictors will automatically be used for the modelling process!  
     ####Proj : Project the model onto another region or time period? (S/N)  
     ####PabR:Presence-Absence Ratio  
-    ####PabM:Pseudo-absence Selection Method  
-      #####rnd:Random  
-      #####const: Constrained by a Bioclim Model  
-      #####zoo: Constrained by ZooRegions(Requires a ASC/TIFF file with information about the Regions, -Recommended Holt et al 2013-)  
+    *PabM:Pseudo-absence Selection Method  
+      +rnd:Random  
+      +const: Constrained by a Bioclim Model  
+      +zoo: Constrained by ZooRegions(Requires a ASC/TIFF file with information about the Regions, -Recommended Holt et al 2013-)  
     ####Part: Data partition method  
       #####boot : Random bootstrap partition (e.g. 70 training - 30% test)  
       #####cross: Random partition in k-fold  
