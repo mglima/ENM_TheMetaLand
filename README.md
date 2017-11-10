@@ -1,4 +1,4 @@
- # ENM_TheMetaLand
+# ENM_TheMetaLand
 
 Welcome! This is the R Script from TheMetaLand Lab to create ENMs  
 Overall, there is a main script (ENM_TheMetaLand) and a group of auxiliary functions (Scripts_for_ENM_TheMetaLand)  
@@ -15,8 +15,8 @@ There are a couple of pre and post-processing available in the function, here is
 **3.** Control Presence/Pseudo-absence Ratio  
 **4.** Different pseudo-absence allocation methods  
 **5.** Different data-partition methods for model evaluation (random or geographically structured)  
-**6.** Ten different algorithms  
-**7.** Create pseudo-absence maps  
+**6.** Nine different algorithms  
+**7.** Create presence-absence maps  
 **8.** Incorporate effects from spatial distribution (M-SDM)  
 **9.** Create Ensemble from the different algorithms  
 
