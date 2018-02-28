@@ -197,27 +197,20 @@ ENMs_TheMetaLand<-function(Dir,
     stop("More than one file format in Dir")
   }
   
-  if(env == 'bil'){
-    envT<-brick(stack(list.files(pattern='\\.bil$')))
+  if(any(env == c('asc', 'bil', 'tif'))){
+    envT<-brick(stack(list.files(pattern=paste0('\\.',env,'$'))))
   }
-  
-  if(env == 'asc'){
-    envT<-brick(stack(list.files(pattern='\\.asc$')))
-  }
-  
   if(env == 'txt'){
     envT<-read.table(list.files(pattern='\\.txt$'),h=T)
     gridded(envT)<- ~x+y
     envT<-brick(stack(envT))
   }
   
-  if(env == 'tif'){
-    envT<-brick(stack(list.files(pattern='\\.tif$')))
+  #3.0.Consistencia entre as variaveis ambientais!
+  if(length(unique(colSums(!is.na(envT[]))))>1){
+    envT[is.na((sum(envT))[])] <- NA
+    print("Variables had differences, setting any empty cells to NA in all variables")
   }
-  
-  ###Consistencia entre as variaveis ambientais!
-  
-  ####################
   
     #3.1.Projection----
   
@@ -274,7 +267,7 @@ ENMs_TheMetaLand<-function(Dir,
       if(Proj=="S"){
        envT <- brick(stack(list.files(pattern='PC')))
       }else{
-        envT<-PCA_env_TMLA(envT)
+        envT<-PCA_env_TMLA(envT,Dir)
       }
     }
   
@@ -298,7 +291,6 @@ ENMs_TheMetaLand<-function(Dir,
   
   print("Select occurrence file(.txt):")
   occ<-read.table(file.choose(getwd()),h=T,sep='\t',stringsAsFactors = F)
-  occ<-occ[,names(occ) %in% c(Sp,x,y)]
   occ<-occ[,c(Sp,x,y)]
   colnames(occ) <- c("sp","x","y")
   occ_xy <- split(occ[,-1],f=occ$sp)
@@ -495,53 +487,52 @@ ENMs_TheMetaLand<-function(Dir,
         occFold <- lapply(occFold, setNames, colsK)
         write.table(ldply(occFold,data.frame,.id="sp"),file.path(DirR,"GruposCrossValidation.txt"),sep="\t",row.names=F)
       }
+      
+      #6.3.Replicates & Model Input----  
+      occINPUT <- list()
         
-        occTREINO <- list()
-        occTESTE <- list()
+      for(k in 1:rep){
+        set.seed(k)
+        if(rep==1){
+          k <- NULL
+        }
+        if(Part=="boot"){
+          if(rep!=1){
+            print(paste("Replicate.....",k),sep="")
+          }
+          tr <- lapply(occ_xy, function(x) sample(1:nrow(x),round(nrow(x)*per)))
+          occTR <- list()
+          occTS <- list()
+          for(i in 1:length(occ_xy)){
+            occTR[[i]] <- occ_xy[[i]][tr[[i]],]
+            if(per==1){
+              occTS[[i]] <- occTR[[i]]
+            }else{
+              occTS[[i]] <- occ_xy[[i]][-tr[[i]],]
+            }
+            occTR[[i]] <- cbind(occTR[[i]], rep(1,nrow(occTR[[i]])),rep(1,nrow(occTR[[i]])))
+            occTS[[i]] <- cbind(occTS[[i]], rep(2,nrow(occTS[[i]])),rep(1,nrow(occTS[[i]])))
+          }
+          names(occTR) <- names(occ_xy)
+          names(occTS) <- names(occTR)
+        }
+        if(Part=="cross"){
+          print(paste("Adjsuting fold....",k,sep=""))
+          occFoldK <- lapply(occFold, function(x) ifelse(x$Partition!=k,1,2))
+          occFoldK <- Map(cbind,occ_xy,occFoldK)
+          occFoldK <- lapply(occFoldK, setNames, colsK)
+          occTR <- lapply(occFoldK, function(x) split(x,f=x$Partition)[[1]])
+          PresAbse <- lapply(occTR, function(x) rep(1,nrow(x)))
+          occTR <- Map(cbind,occTR,PresAbse)
+          occTS <- lapply(occFoldK, function(x) split(x,f=x$Partition)[[2]])
+          PresAbse <- lapply(occTS, function(x) rep(1,nrow(x)))
+          occTS <- Map(cbind,occTS,PresAbse)
+          names(occTR) <- names(occ_xy)
+          names(occTS) <- names(occTR)
+        }
         
-        for(k in 1:rep){
-          
-          if(rep==1){
-            k <- NULL
-          }
-          if(Part=="boot"){
-            if(rep!=1){
-              print(paste("Replicate.....",k),sep="")
-            }
-            tr <- lapply(occ_xy, function(x) sample(1:nrow(x),round(nrow(x)*per)))
-            occTR <- list()
-            occTS <- list()
-            for(i in 1:length(occ_xy)){
-              occTR[[i]] <- occ_xy[[i]][tr[[i]],]
-              if(per==1){
-                occTS[[i]] <- occTR[[i]]
-              }else{
-                occTS[[i]] <- occ_xy[[i]][-tr[[i]],]
-              }
-              occTR[[i]] <- cbind(occTR[[i]], rep(1,nrow(occTR[[i]])),rep(1,nrow(occTR[[i]])))
-              occTS[[i]] <- cbind(occTS[[i]], rep(2,nrow(occTS[[i]])),rep(1,nrow(occTS[[i]])))
-            }
-            names(occTR) <- names(occ_xy)
-            names(occTS) <- names(occTR)
-          }
-          if(Part=="cross"){
-            print(paste("Adjsuting fold....",k,sep=""))
-            occFoldK <- lapply(occFold, function(x) ifelse(x$Partition!=k,1,2))
-            occFoldK <- Map(cbind,occ_xy,occFoldK)
-            occFoldK <- lapply(occFoldK, setNames, colsK)
-            occTR <- lapply(occFoldK, function(x) split(x,f=x$Partition)[[1]])
-            PresAbse <- lapply(occTR, function(x) rep(1,nrow(x)))
-            occTR <- Map(cbind,occTR,PresAbse)
-            occTS <- lapply(occFoldK, function(x) split(x,f=x$Partition)[[2]])
-            PresAbse <- lapply(occTS, function(x) rep(1,nrow(x)))
-            occTS <- Map(cbind,occTS,PresAbse)
-            names(occTR) <- names(occ_xy)
-            names(occTS) <- names(occTR)
-          }
-          
-        #6.3. Generating Pseudo-Absences----
-  
-          #Random Pseudo-Absences
+      #6.4. Generating Pseudo-Absences----
+        #Random Pseudo-Absences
           if(PabM=="rnd"){
             pseudo.mask <- envT[[1]]
             absencesTR <- list()
@@ -558,7 +549,7 @@ ENMs_TheMetaLand<-function(Dir,
             DirCons <- NULL
           }
           
-          #Bioclimatic Constrained Pseudo-Absences
+        #Bioclimatic Constrained Pseudo-Absences
           if(PabM=="const"){
             
             DirCons <- "Constrain"
@@ -598,7 +589,7 @@ ENMs_TheMetaLand<-function(Dir,
             absencesTS <- lapply(absencesTS, function(x) cbind(x, rep(2,nrow(x)), rep(0,nrow(x))))
           }
           
-          #Zoogeographical Constrained Pseudo-Absences
+        #Zoogeographical Constrained Pseudo-Absences
           if(PabM=="zoo"){
               print("Select Folder with ZooRegions Mask(.tif):")
               DirZ <- choose.dir(getwd())
@@ -630,7 +621,7 @@ ENMs_TheMetaLand<-function(Dir,
               absencesTS <- lapply(absencesTS, function(x) cbind(x, rep(2,nrow(x)), rep(0,nrow(x))))
           }
           
-        #6.4.Model Input----
+        #Model Input
           for(i in 1:length(occTR)){
             occTR[[i]] <- cbind(rep(names(occTR)[i],nrow(occTR[[i]])),occTR[[i]])
             colnames(occTR[[i]]) <- c("sp","x","y","Partition","PresAbse")
@@ -650,32 +641,35 @@ ENMs_TheMetaLand<-function(Dir,
           occT[,cols] = apply(occT[,cols], 2, function(x) as.numeric(as.character(x)))
           if(rep!=1){
             occT[,"sp"] <- paste(occT[,"sp"],k,sep="_")
+            occINPUT[[k]] <- occT
+          }else{
+            occINPUT <- occT
           }
           
-        #6.5. Define Threshold----
-          Thresh <- NULL
-          if(any(Thr=="LPT")){
-            Thresh <- c(Thresh,'no_omission')
-          }
-          if(any(Thr=="MAX")){
-            Thresh <- c(Thresh,'spec_sens')
-          }
+          # occINPUT <- ldply(occINPUT,data.frame,.id=NULL)
+          
+      #6.6. Define Threshold----
+        if(Thr=="LPT"){
+          Thresh <- 'no_omission'
+        }else{
+          Thresh <- 'spec_sens'
+        }
         
-        #6.6. Define Projection----
-          if(Proj=="S"){
-            Fut <- EnvF
-          }else{
-            Fut <- NULL
-          }
-        
-        #6.7. Calculate Moran & MESS
-          if(per!=1 || Part=="cross"){
-            Bootstrap_Moran_e_MESS_TMLA(Env=envT,RecordsData=occT,DirO=DirR,repl=k)
-          }
+      #6.6. Define Projection----
+        if(Proj=="S"){
+          Fut <- EnvF
+        }else{
+          Fut <- NULL
+        }
+      
+      #6.7. Calculate Moran & MESS
+      if(per!=1 || Part=="cross"){
+        Bootstrap_Moran_e_MESS_TMLA(Env=envT,RecordsData=occINPUT,DirO=DirR)
+      }
           
         #6.8. Run FitENM
-          FitENM_TMLA(RecordsData=occT,Variables=envT,Fut=Fut,Part=Part,Algorithm=Alg,PredictType=ENS,
-                      Threshold = Thresh,DirSave=DirR,DirMask=DirCons,DirMSDM=DirPRI,repl=k,Save=SavePart)
+          FitENM_TMLA(RecordsData=occINPUT,Variables=envT,Fut=Fut,Part=Part,Algorithm=Alg,PredictType=ENS,
+                      Threshold = Thresh,DirSave=DirR,DirMask=NULL,DirMSDM=DirPRI,Save=SavePart,repl=k)
         
           #6.9. Create Occurrence Table for Replicates
           if(rep!=1 || Part=="cross"){
@@ -756,7 +750,8 @@ ENMs_TheMetaLand<-function(Dir,
         }
         for(i in 1:length(DirPost)){
           print(paste("Diretorio.....",i,"/",length(DirPost),sep=""))
-          MSDM_Posterior(RecordsData=occT,Threshold=Thresh,cutoff=Q0,DirSave=DirPost[i],DirRaster=DirT[i])
+          MSDM_Posterior(RecordsData=occT,Threshold=Thresh,cutoff=Q0,PredictType=ENS,
+                         DirSave=DirPost[i],DirRaster=DirT[i])
         }
       }
       if(Q1=="N" ||!("ENS"%in%list.files(DirR))){
@@ -778,6 +773,6 @@ ENMs_TheMetaLand<-function(Dir,
 }
 
 
-ENMs_TheMetaLand(Dir="C:\\OneDrive\\R\\Codigos\\ENM_TheMetaLand\\TestePCAFuturo\\presente",
-                 Sp="Species",x="Long",y="Lat",NMin=10,PCA="N",Proj="S",PabR=1,PabM="rnd",
-                 Part="boot",SavePart="N",Alg=c("BIO","GLM","GAM","SVM","RDF","MXS","MXD","MLK","GAU"),Thr=c("MAX","LPT"),MSDM="N",ENS=c("Mean","Sup","PCA","PCA_Sup","PCA_Thr"))
+ENMs_TheMetaLand(Dir="C:\\OneDrive\\Trabajos\\13 - Expansao Nicho Renas\\variaveis\\Nativa\\Parana",
+                 Sp="Sp",x="long",y="lat",NMin=10,PCA="N",Proj="S",PabR=1,PabM="const",
+                 Part="boot",SavePart="N",Alg=c("SVM","RDF","MXS","MLK","GAU","GLM","GAM"),Thr=c("MAX"),MSDM="N",ENS=c("Mean"))
