@@ -276,7 +276,7 @@ FitENM_TMLA <- function(RecordsData,
     
     #Include MSDM
     if(is.null(DirMSDM)==F){
-      msdm <- raster(paste(DirMSDM,paste(SpNames[s],".tif",sep=""),sep="/"))
+      msdm <- raster(file.path(DirMSDM,paste(SpNames[s],".tif",sep="")))
       SpData <- cbind(SpData,extract(msdm,SpData[c("x","y")]))
       colnames(SpData)[ncol(SpData)] <- "MSDM"
       if ((any(Algorithm == "MXD") | any(Algorithm == "MXS"))) {
@@ -865,9 +865,8 @@ FitENM_TMLA <- function(RecordsData,
         }
       }
       }else{
-        Validation2 <- data.frame(matrix(rep(NA,(dim(Validation)[1]*dim(Validation)[2])),nrow=dim(Validation)[1],ncol=dim(Validation)[2]))
+        Validation2 <- data.frame(matrix(rep(NA,(dim(Validation)[1]*dim(Validation)[2])),nrow=dim(Validation)[1],ncol=dim(Validation)[2]-1))
         colnames(Validation2) <- colnames(Validation)
-        Validation_GAM[[s]] <- data.frame(Sp = SpNames[s], Algorithm = "GAM", Validation2)
         Summary_GAM[[s]] <- data.frame(Sp = SpNames[s], Algorithm = "GAM", Validation2)
         ListRaster[["GAM"]] <- Variables[[1]]*0
         if(is.null(Fut)==F){
@@ -960,7 +959,6 @@ FitENM_TMLA <- function(RecordsData,
       }else{
         Validation2 <- data.frame(matrix(rep(NA,(dim(Validation)[1]*dim(Validation)[2])),nrow=dim(Validation)[1],ncol=dim(Validation)[2]))
         colnames(Validation2) <- colnames(Validation)
-        Validation_GLM[[s]] <- data.frame(Sp = SpNames[s], Algorithm = "GLM", Validation2)
         Summary_GLM[[s]] <- data.frame(Sp = SpNames[s], Algorithm = "GLM", Validation2)
         ListRaster[["GLM"]] <- Variables[[1]]*0
         if(is.null(Fut)==F){
@@ -1054,7 +1052,22 @@ FitENM_TMLA <- function(RecordsData,
     result <- list()
     for(i in 1:length(Obj)){
       result[[i]] <- ldply(get(Obj[i]))}
-    result <- ldply(result)
+    result <- ldply(result,data.frame,.id=NULL)
+    
+    # #Adjust results when GLM and GAM could not be fitted
+    # if(sum(is.na(result))!=0){
+    #   if(any(Threshold=="no_omission")){
+    #     result$TYPE <- "LPT"
+    #   }
+    #   if(any(Threshold=="spec_sens")){
+    #     result$TYPE <- "MAX"
+    #   }
+    #   print("GLM & GAM could not be fitted!")
+    #   result <- na.omit(result)
+    #   ListRaster[["GAM"]] <- NULL
+    #   ListRaster[["GLM"]] <- NULL
+    # }
+
 
     # Ensemble-----
     # Without Ensemble
