@@ -490,6 +490,8 @@ ENMs_TheMetaLand<-function(Dir,
       
       #6.3.Replicates & Model Input----  
       occINPUT <- list()
+      occTREINO <- list()
+      occTESTE <- list()
         
       for(k in 1:rep){
         set.seed(k)
@@ -641,7 +643,7 @@ ENMs_TheMetaLand<-function(Dir,
           occT[,cols] = apply(occT[,cols], 2, function(x) as.numeric(as.character(x)))
           if(rep!=1){
             occT[,"sp"] <- paste(occT[,"sp"],k,sep="_")
-            occINPUT[[k]] <- occT
+            occINPUT <- occT
           }else{
             occINPUT <- occT
           }
@@ -773,6 +775,6 @@ ENMs_TheMetaLand<-function(Dir,
 }
 
 
-ENMs_TheMetaLand(Dir="C:\\OneDrive\\Trabajos\\13 - Expansao Nicho Renas\\variaveis\\Nativa\\Parana",
-                 Sp="Sp",x="long",y="lat",NMin=10,PCA="N",Proj="S",PabR=1,PabM="const",
+ENMs_TheMetaLand(Dir="C:\\OneDrive\\Trabajos\\14 - LuizaInvasoras\\Vars",
+                 Sp="SP",x="X",y="Y",NMin=10,PCA="N",Proj="N",PabR=1,PabM="const",
                  Part="boot",SavePart="N",Alg=c("SVM","RDF","MXS","MLK","GAU","GLM","GAM"),Thr=c("MAX"),MSDM="N",ENS=c("Mean"))
